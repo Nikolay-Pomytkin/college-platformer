@@ -17,10 +17,10 @@ class TextButton:
                  width, height,
                  text,
                  font_size=18,
-                 font_face="Arial",
-                 face_color=arcade.color.LIGHT_GRAY,
-                 highlight_color=arcade.color.WHITE,
-                 shadow_color=arcade.color.GRAY,
+                 font_face="Futura-Medium",
+                 face_color=arcade.color.RED,
+                 highlight_color=arcade.color.ORANGE,
+                 shadow_color=arcade.color.BLACK,
                  button_height=2):
         self.center_x = center_x
         self.center_y = center_y
@@ -38,7 +38,7 @@ class TextButton:
     def draw(self):
         """ Draw the button """
         arcade.draw_rectangle_filled(self.center_x, self.center_y, self.width,
-                                     self.height, self.face_color)
+                                     self.height, self.face_color, 6)
 
         if not self.pressed:
             color = self.shadow_color
@@ -111,7 +111,7 @@ def check_mouse_release_for_buttons(x, y, button_list):
 
 class StartTextButton(TextButton):
     def __init__(self, center_x, center_y, action_function):
-        super().__init__(center_x, center_y, 200, 50, "Play", 22, "Arial")
+        super().__init__(center_x, center_y, 200, 50, "Play", 24, "Futura-Medium")
         self.action_function = action_function
 
     def on_release(self):
@@ -120,7 +120,7 @@ class StartTextButton(TextButton):
 
 class CreditsTextButton(TextButton):
     def __init__(self, center_x, center_y, action_function):
-        super().__init__(center_x, center_y, 200, 50, "Credits", 22, "Arial")
+        super().__init__(center_x, center_y, 200, 50, "Credits", 24, "Futura-Medium")
         self.action_function = action_function
 
     def on_release(self):
@@ -129,7 +129,7 @@ class CreditsTextButton(TextButton):
 
 class StopTextButton(TextButton):
     def __init__(self, center_x, center_y, action_function):
-        super().__init__(center_x, center_y, 200, 50, "Quit", 22, "Arial")
+        super().__init__(center_x, center_y, 200, 50, "Quit", 24, "Futura-Medium")
         self.action_function = action_function
 
     def on_release(self):
@@ -248,6 +248,19 @@ class PlatformerGame(arcade.Window):
                 self.player_sprite.change_y = 0
             elif key == arcade.key.LEFT or key == arcade.key.RIGHT:
                 self.player_sprite.change_x = 0
+        def on_mouse_press(self, x, y, button, key_modifiers):
+            """
+            Called when the user presses a mouse button.
+            """
+            check_mouse_press_for_buttons(x, y, self.screens[self.current_screen].button_list)
+
+        def on_mouse_release(self, x, y, button, key_modifiers):
+            """
+            Called when a user releases a mouse button.
+            """
+            check_mouse_release_for_buttons(x, y, self.screens[self.current_screen].button_list)
+
+
 
     def update(self, delta_time):
         """ Movement and game logic """
