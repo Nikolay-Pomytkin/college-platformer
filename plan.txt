@@ -12,8 +12,6 @@ Order to code things in:
   - Next button
 
 
-
-
 Assets I need to find:
   - GUI texture pack
   - Sprites for Female + Male Main Character
