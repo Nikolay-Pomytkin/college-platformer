@@ -1,11 +1,11 @@
 import arcade
 import os
 
-SPRITE_SCALING = 0.5
+SPRITE_SCALING = 0.75
 SPRITE_NATIVE_SIZE = 128
 SPRITE_SIZE = int(SPRITE_NATIVE_SIZE * SPRITE_SCALING)
 
-SCREEN_WIDTH = SPRITE_SIZE * 14
+SCREEN_WIDTH = SPRITE_SIZE * 16
 SCREEN_HEIGHT = SPRITE_SIZE * 10
 
 MOVEMENT_SPEED = 5
@@ -18,8 +18,8 @@ class TextButton:
                  text,
                  font_size=18,
                  font_face="Futura-Medium",
-                 face_color=arcade.color.RED,
-                 highlight_color=arcade.color.ORANGE,
+                 face_color=arcade.color.BLACK,
+                 highlight_color=arcade.color.BLACK,
                  shadow_color=arcade.color.BLACK,
                  button_height=2):
         self.center_x = center_x
@@ -37,7 +37,7 @@ class TextButton:
 
     def draw(self):
         """ Draw the button """
-        arcade.draw_rectangle_filled(self.center_x, self.center_y, self.width,
+        arcade.draw_rectangle_outline(self.center_x, self.center_y, self.width,
                                      self.height, self.face_color, 6)
 
         if not self.pressed:
@@ -87,9 +87,13 @@ class TextButton:
     def on_release(self):
         self.pressed = False
 
-def check_mouse_press_for_buttons(x, y, button_list):
+def check_mouse_press_for_buttons(x, y, button_list, game):
     """ Given an x, y, see if we need to register any button clicks. """
-    for button in button_list:
+    for index, button in enumerate(button_list):
+        if game.current_screen == 1 and index != 3:
+            continue
+        if game.current_screen == 2:
+            continue
         if x > button.center_x + button.width / 2:
             continue
         if x < button.center_x - button.width / 2:
@@ -108,10 +112,9 @@ def check_mouse_release_for_buttons(x, y, button_list):
         if button.pressed:
             button.on_release()
 
-
 class StartTextButton(TextButton):
     def __init__(self, center_x, center_y, action_function):
-        super().__init__(center_x, center_y, 200, 50, "Play", 24, "Futura-Medium")
+        super().__init__(center_x, center_y, 400, 100, "Play", 24, "Futura-Medium")
         self.action_function = action_function
 
     def on_release(self):
@@ -120,7 +123,16 @@ class StartTextButton(TextButton):
 
 class CreditsTextButton(TextButton):
     def __init__(self, center_x, center_y, action_function):
-        super().__init__(center_x, center_y, 200, 50, "Credits", 24, "Futura-Medium")
+        super().__init__(center_x, center_y, 400, 100, "Credits", 24, "Futura-Medium")
+        self.action_function = action_function
+
+    def on_release(self):
+        super().on_release()
+        self.action_function()
+
+class BackTextButton(TextButton):
+    def __init__(self, center_x, center_y, action_function):
+        super().__init__(center_x, center_y, 400, 100, "Back to Main Screen", 24, "Futura-Medium")
         self.action_function = action_function
 
     def on_release(self):
@@ -129,7 +141,7 @@ class CreditsTextButton(TextButton):
 
 class StopTextButton(TextButton):
     def __init__(self, center_x, center_y, action_function):
-        super().__init__(center_x, center_y, 200, 50, "Quit", 24, "Futura-Medium")
+        super().__init__(center_x, center_y, 400, 100, "Quit", 24, "Futura-Medium")
         self.action_function = action_function
 
     def on_release(self):
@@ -146,29 +158,28 @@ class Screen:
         self.background = None
         self.button_list = None
 
+
+
 def MainScreen():
     ''' Create and return the screen for the main screen '''
     main_screen = Screen()
     main_screen.background = arcade.load_texture("images/main_background.png")
-    main_screen.button_list = []
-    play_button = StartTextButton(448, 360, start_selection_screen)
-    main_screen.button_list.append(play_button)
-    credits_button = CreditsTextButton(448, 280, start_selection_screen)
-    main_screen.button_list.append(credits_button)
-    quit_button = StopTextButton(448, 200, os._exit)
-    main_screen.button_list.append(quit_button)
 
     return main_screen
 
-def start_selection_screen():
-    window.current_screen = 1
 
 def CreditsScreen():
     ''' Create and return the screen for the credits screen '''
-    var = 1
+    credits_screen = Screen()
+    credits_screen.background = arcade.load_texture("images/credits.png")
+
+    return credits_screen
+
 def setup_screen_1():
     # Level 1: College Bully
-    var = 2
+    level1 = Screen()
+    level1.background = arcade.load_texture("images/level1background.jpg")
+    return level1
 def setup_screen_2():
     # Level 2: Midterms
     var = 3
@@ -177,7 +188,14 @@ def setup_screen_3():
     var = 4
 class PlatformerGame(arcade.Window):
     ''' Class that holds main application functions: initializer, update, draw, etc... '''
-
+    def quit(self):
+        os._exit(0)
+    def play(self):
+        self.current_screen = 2
+    def credits(self):
+        self.current_screen = 1
+    def main(self):
+        self.current_screen = 0
     def __init__(self, width, height):
         ''' Initializer '''
         super().__init__(width, height)
@@ -201,19 +219,30 @@ class PlatformerGame(arcade.Window):
 
         # setup screens
         self.screens = []
-        screen = MainScreen()
-        self.screens.append(screen)
-        screen = CreditsScreen()
-        self.screens.append(screen)
-        screen = setup_screen_1()
-        self.screens.append(screen)
-        screen = setup_screen_2()
-        self.screens.append(screen)
-        screen = setup_screen_3()
-        self.screens.append(screen)
-
+        screen1 = MainScreen()
+        self.screens.append(screen1)
+        screen2 = CreditsScreen()
+        self.screens.append(screen2)
+        screen3 = setup_screen_1()
+        self.screens.append(screen3)
+        screen4 = setup_screen_2()
+        self.screens.append(screen4)
+        screen5 = setup_screen_3()
+        self.screens.append(screen5)
+        if self.screens[1] == None:
+            print("fuck")
         # choose starting room
         self.current_screen = 0
+
+        self.button_list = []
+        play_button = StartTextButton(784, 605, self.play)
+        self.button_list.append(play_button)
+        credits_button = CreditsTextButton(784, 465, self.credits)
+        self.button_list.append(credits_button)
+        quit_button = StopTextButton(784, 325, self.quit)
+        self.button_list.append(quit_button)
+        back_button = BackTextButton(784,683, self.main)
+        self.button_list.append(back_button)
 
     def on_draw(self):
         ''' Actually render the screen '''
@@ -225,42 +254,45 @@ class PlatformerGame(arcade.Window):
             self.screens[self.current_screen].wall_list.draw()
             self.player_sprite.draw()
         if self.current_screen == 0:
-            if self.screens[self.current_screen].button_list != None:
-                for button in self.screens[self.current_screen].button_list:
+            for index, button in enumerate(self.button_list):
+                if index != 3:
                     button.draw()
+        if self.current_screen == 1:
+            self.button_list[3].draw()
 
-        def on_key_press(self, key, modifiers):
-            ''' Called whenever a key is pressed. '''
+    def on_key_press(self, key, modifiers):
+        ''' Called whenever a key is pressed. '''
 
-            if key == arcade.key.UP:
-                self.player_sprite.change_y = MOVEMENT_SPEED
-            elif key == arcade.key.DOWN:
-                self.player_sprite.change_y = -MOVEMENT_SPEED
-            elif key == arcade.key.LEFT:
-                self.player_sprite.change_x = -MOVEMENT_SPEED
-            elif key == arcade.key.RIGHT:
-                self.player_sprite.change_x = MOVEMENT_SPEED
+        if key == arcade.key.UP:
+            self.player_sprite.change_y = MOVEMENT_SPEED
+        elif key == arcade.key.DOWN:
+            self.player_sprite.change_y = -MOVEMENT_SPEED
+        elif key == arcade.key.LEFT:
+            self.player_sprite.change_x = -MOVEMENT_SPEED
+        elif key == arcade.key.RIGHT:
+            self.player_sprite.change_x = MOVEMENT_SPEED
 
-        def on_key_release(self, key, modifiers):
-            """Called when the user releases a key. """
+    def on_key_release(self, key, modifiers):
+        """Called when the user releases a key. """
+        if key == arcade.key.Q:
+            os._exit
+        if key == arcade.key.UP or key == arcade.key.DOWN:
+            self.player_sprite.change_y = 0
+        elif key == arcade.key.LEFT or key == arcade.key.RIGHT:
+            self.player_sprite.change_x = 0
 
-            if key == arcade.key.UP or key == arcade.key.DOWN:
-                self.player_sprite.change_y = 0
-            elif key == arcade.key.LEFT or key == arcade.key.RIGHT:
-                self.player_sprite.change_x = 0
-        def on_mouse_press(self, x, y, button, key_modifiers):
-            """
-            Called when the user presses a mouse button.
-            """
-            check_mouse_press_for_buttons(x, y, self.screens[self.current_screen].button_list)
+    def on_mouse_press(self, x, y, button, key_modifiers):
+        """
+        Called when the user presses a mouse button.
+        """
+        check_mouse_press_for_buttons(x, y, self.button_list, self)
 
-        def on_mouse_release(self, x, y, button, key_modifiers):
-            """
-            Called when a user releases a mouse button.
-            """
-            check_mouse_release_for_buttons(x, y, self.screens[self.current_screen].button_list)
-
-
+    def on_mouse_release(self, x, y, button, key_modifiers):
+        """
+        Called when a user releases a mouse button.
+        """
+        self.on_mouse_press(x,y,button, key_modifiers)
+        check_mouse_release_for_buttons(x, y, self.button_list)
 
     def update(self, delta_time):
         """ Movement and game logic """
