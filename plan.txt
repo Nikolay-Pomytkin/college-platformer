@@ -1,0 +1,20 @@
+Order to code things in:
+
+1. Intro Screen:
+  - Play
+  - Credits
+  - Quit
+
+2. Selection screen (from Play button):
+  - Male or Female
+  - Difficulty (2 or 4 lives)
+  - Explanation of first level
+  - Next button
+
+
+
+
+Assets I need to find:
+  - GUI texture pack
+  - Sprites for Female + Male Main Character
+  - Tile set pack
