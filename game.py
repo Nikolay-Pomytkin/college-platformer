@@ -1,15 +1,27 @@
 import arcade
 import os
+import math
 
 SPRITE_SCALING = 0.75
-SPRITE_NATIVE_SIZE = 128
+PLAYER_SCALING = 0.55
+SPRITE_NATIVE_SIZE = 64
 SPRITE_SIZE = int(SPRITE_NATIVE_SIZE * SPRITE_SCALING)
+SPRITE_SCALING_LASER = 0.3
+BULLET_SPEED = 10
+SCREEN_WIDTH = SPRITE_SIZE * 32
+SCREEN_HEIGHT = SPRITE_SIZE * 20
 
-SCREEN_WIDTH = SPRITE_SIZE * 16
-SCREEN_HEIGHT = SPRITE_SIZE * 10
+MOVEMENT_SPEED = 6
+JUMP_SPEED = 14
+ENEMY_JUMP_SPEED = 25
+GRAVITY = 0.5
 
-MOVEMENT_SPEED = 5
-
+class Bullet(arcade.Sprite):
+    def update(self):
+        self.center_x += BULLET_SPEED
+class Enemy_Bullet(arcade.Sprite):
+    def update(self):
+        self.center_x -= BULLET_SPEED
 class TextButton:
     """ Text-based button """
     def __init__(self,
@@ -160,6 +172,7 @@ class Screen:
 
 
 
+
 def MainScreen():
     ''' Create and return the screen for the main screen '''
     main_screen = Screen()
@@ -179,7 +192,50 @@ def setup_screen_1():
     # Level 1: College Bully
     level1 = Screen()
     level1.background = arcade.load_texture("images/level1background.jpg")
+
+    level1.wall_list = arcade.SpriteList()
+    # Create top and bottom column of boxes
+    for y in (0, SCREEN_HEIGHT - SPRITE_SIZE):
+        # Loop for each box going across
+        for x in range(0, SCREEN_WIDTH, SPRITE_SIZE):
+            if y < 20:
+                wall = arcade.Sprite("images/grass_floor.png", SPRITE_SCALING)
+            # else:
+            #     wall = arcade.Sprite("images/brick_wall.png", SPRITE_SCALING)
+
+                wall.left = x
+                wall.bottom = y
+                level1.wall_list.append(wall)
+    for x in range(6,10):
+        wall1 = arcade.Sprite("images/grass_floor.png", SPRITE_SCALING)
+        wall1.left = x * SPRITE_SIZE
+        wall1.bottom = 3 * SPRITE_SIZE
+        level1.wall_list.append(wall1)
+
+    for x in range(0,3):
+        wall1 = arcade.Sprite("images/grass_floor.png", SPRITE_SCALING)
+        wall1.left = x * SPRITE_SIZE
+        wall1.bottom = 5 * SPRITE_SIZE
+        level1.wall_list.append(wall1)
+    level1.background = arcade.load_texture("images/level1background.jpg")
+
+    for x in range(7,10):
+        wall1 = arcade.Sprite("images/grass_floor.png", SPRITE_SCALING)
+        wall1.left = x * SPRITE_SIZE
+        wall1.bottom = 7 * SPRITE_SIZE
+        level1.wall_list.append(wall1)
+    level1.background = arcade.load_texture("images/level1background.jpg")
+
+    for x in range(0,2):
+        wall1 = arcade.Sprite("images/grass_floor.png", SPRITE_SCALING)
+        wall1.left = x * SPRITE_SIZE
+        wall1.bottom = 10 * SPRITE_SIZE
+        level1.wall_list.append(wall1)
+    level1.background = arcade.load_texture("images/level1background.jpg")
+
     return level1
+
+
 def setup_screen_2():
     # Level 2: Midterms
     var = 3
@@ -207,16 +263,53 @@ class PlatformerGame(arcade.Window):
         # Sprite Lists
         self.current_screen = 0
         self.button_list = None
+        self.bullet_list = None
+        self.enemy_bullet_list = None
+        self.all_sprites_list = None
+        self.enemy_sprite = None
 
     def setup(self):
+        self.all_sprites_list = arcade.SpriteList()
         ''' Set up the game and initialize the variables '''
-
         # set up the player
-        self.life = 3
-        self.player_sprite  = arcade.Sprite("images/character.png", SPRITE_SCALING)
-        self.player_sprite.center_x = 100
-        self.player_sprite.center_y = 100
+        self.enemy_bullet_counter = 0
 
+        self.player_sprite  = arcade.AnimatedWalkingSprite()
+        self.player_sprite.center_x = 50
+        self.player_sprite.center_y = 73
+
+        self.player_sprite.stand_right_textures = []
+        self.player_sprite.stand_right_textures.append(arcade.load_texture("images/character_sprites/character0.png", scale=PLAYER_SCALING))
+        self.player_sprite.stand_left_textures = []
+        self.player_sprite.stand_left_textures.append(arcade.load_texture("images/character_sprites/character0.png",scale=PLAYER_SCALING, mirrored=True))
+
+        self.player_sprite.walk_right_textures = []
+        self.player_sprite.walk_right_textures.append(arcade.load_texture("images/character_sprites/characterw0.png",scale=PLAYER_SCALING))
+        self.player_sprite.walk_right_textures.append(arcade.load_texture("images/character_sprites/characterw1.png",scale=PLAYER_SCALING))
+        self.player_sprite.walk_right_textures.append(arcade.load_texture("images/character_sprites/characterw2.png",scale=PLAYER_SCALING))
+        self.player_sprite.walk_right_textures.append(arcade.load_texture("images/character_sprites/characterw3.png",scale=PLAYER_SCALING))
+
+        self.player_sprite.walk_left_textures = []
+        self.player_sprite.walk_left_textures.append(arcade.load_texture("images/character_sprites/characterw0.png",scale=PLAYER_SCALING, mirrored=True))
+        self.player_sprite.walk_left_textures.append(arcade.load_texture("images/character_sprites/characterw1.png",scale=PLAYER_SCALING, mirrored=True))
+        self.player_sprite.walk_left_textures.append(arcade.load_texture("images/character_sprites/characterw2.png",scale=PLAYER_SCALING, mirrored=True))
+        self.player_sprite.walk_left_textures.append(arcade.load_texture("images/character_sprites/characterw3.png",scale=PLAYER_SCALING, mirrored=True))
+
+        self.player_sprite.texture_change_distance = 35
+        self.enemy_health = 100
+        self.player_health = 100
+        self.all_sprites_list.append(self.player_sprite)
+        self.bullet_list = arcade.SpriteList()
+        self.enemy_bullet_list = arcade.SpriteList()
+        self.move_right = False
+        self.move_left = False
+        self.moving_up = False
+        self.last_y = self.player_sprite.center_y
+
+        self.enemy_sprite = arcade.Sprite("images/bully1.png", 0.65)
+        self.enemy_sprite.center_x = 1400
+        self.enemy_sprite.center_y = 77
+        self.all_sprites_list.append(self.enemy_sprite)
         # setup screens
         self.screens = []
         screen1 = MainScreen()
@@ -229,11 +322,11 @@ class PlatformerGame(arcade.Window):
         self.screens.append(screen4)
         screen5 = setup_screen_3()
         self.screens.append(screen5)
-        if self.screens[1] == None:
-            print("fuck")
+
         # choose starting room
         self.current_screen = 0
-
+        self.physics_engine = arcade.PhysicsEnginePlatformer(self.player_sprite, self.screens[2].wall_list, GRAVITY)
+        self.physics_engine2 = arcade.PhysicsEnginePlatformer(self.enemy_sprite, self.screens[2].wall_list, GRAVITY)
         self.button_list = []
         play_button = StartTextButton(784, 605, self.play)
         self.button_list.append(play_button)
@@ -244,47 +337,72 @@ class PlatformerGame(arcade.Window):
         back_button = BackTextButton(784,683, self.main)
         self.button_list.append(back_button)
 
+
     def on_draw(self):
         ''' Actually render the screen '''
 
         arcade.start_render()
         arcade.draw_texture_rectangle(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2, SCREEN_WIDTH, SCREEN_HEIGHT, self.screens[self.current_screen].background)
-
+        self.bullet_list.draw()
+        self.enemy_bullet_list.draw()
         if self.screens[self.current_screen].wall_list != None:
             self.screens[self.current_screen].wall_list.draw()
             self.player_sprite.draw()
+            if self.enemy_health > 0:
+                self.enemy_sprite.draw()
+            else:
+                arcade.draw_text("Congrats, you have defeated the bully!!", SCREEN_WIDTH/2, SCREEN_HEIGHT/2, arcade.color.BLACK, 35, width=250, align="center",
+                                             anchor_x="center", anchor_y="center")
         if self.current_screen == 0:
             for index, button in enumerate(self.button_list):
                 if index != 3:
                     button.draw()
         if self.current_screen == 1:
             self.button_list[3].draw()
+        if self.current_screen == 2:
 
+            arcade.draw_text("Player Health: " + str(self.player_health), self.player_sprite.center_x, self.player_sprite.center_y +50, arcade.color.BLACK, 14, width=150, align="center",
+                             anchor_x="center", anchor_y="center")
+            if self.enemy_health > 0:
+                arcade.draw_text("Enemy Health: " + str(self.enemy_health), self.enemy_sprite.center_x, self.enemy_sprite.center_y +50, arcade.color.BLACK, 14, width=150, align="center",
+                                 anchor_x="center", anchor_y="center")
     def on_key_press(self, key, modifiers):
         ''' Called whenever a key is pressed. '''
 
         if key == arcade.key.UP:
-            self.player_sprite.change_y = MOVEMENT_SPEED
-        elif key == arcade.key.DOWN:
-            self.player_sprite.change_y = -MOVEMENT_SPEED
-        elif key == arcade.key.LEFT:
-            self.player_sprite.change_x = -MOVEMENT_SPEED
-        elif key == arcade.key.RIGHT:
-            self.player_sprite.change_x = MOVEMENT_SPEED
+            if self.physics_engine.can_jump():
+                self.player_sprite.change_y = JUMP_SPEED
+        if key == arcade.key.LEFT:
+            self.move_left = True
+        if key == arcade.key.RIGHT:
+            self.move_right = True
+        if key == arcade.key.SPACE:
+            bullet = Bullet("images/bullet.png", SPRITE_SCALING_LASER)
+            bullet2 = Enemy_Bullet("images/enemy_bullet.png", SPRITE_SCALING_LASER)
+            bullet.angle = 270
+            bullet2.angle = 90
+            # Position the bullet
+            bullet.center_x = self.player_sprite.center_x
+            bullet.bottom = self.player_sprite.center_y
+            bullet2.center_x = self.enemy_sprite.center_x
+            bullet2.bottom = self.enemy_sprite.center_y
+            # Add the bullet to the appropriate lists
+            self.bullet_list.append(bullet)
+            self.enemy_bullet_list.append(bullet2)
 
     def on_key_release(self, key, modifiers):
         """Called when the user releases a key. """
-        if key == arcade.key.Q:
-            os._exit
-        if key == arcade.key.UP or key == arcade.key.DOWN:
-            self.player_sprite.change_y = 0
-        elif key == arcade.key.LEFT or key == arcade.key.RIGHT:
-            self.player_sprite.change_x = 0
+
+        if key == arcade.key.LEFT:
+            self.move_left = False
+        if key == arcade.key.RIGHT:
+            self.move_right = False
 
     def on_mouse_press(self, x, y, button, key_modifiers):
         """
         Called when the user presses a mouse button.
         """
+
         check_mouse_press_for_buttons(x, y, self.button_list, self)
 
     def on_mouse_release(self, x, y, button, key_modifiers):
@@ -295,29 +413,82 @@ class PlatformerGame(arcade.Window):
         check_mouse_release_for_buttons(x, y, self.button_list)
 
     def update(self, delta_time):
+
+        if self.physics_engine2.can_jump():
+            self.enemy_sprite.change_y = ENEMY_JUMP_SPEED
+
         """ Movement and game logic """
-
-        # Call update on all sprites (The sprites don't do much in this
-        # example though.)
-    #self.physics_engine.update()
-
+        if self.move_right == True and self.move_left == False:
+            self.player_sprite.change_x = MOVEMENT_SPEED
+        elif self.move_left == True and self.move_right == False:
+            self.player_sprite.change_x = -MOVEMENT_SPEED
+        elif self.move_left == True and self.move_right == True:
+            self.player_sprite.change_x = 0
+        elif self.move_right == False and self.move_left == False:
+            self.player_sprite.change_x = 0
+        if self.current_screen == 2 and self.physics_engine != None:
+            self.physics_engine.update()
+            self.physics_engine2.update()
+            self.bullet_list.update()
+            self.enemy_bullet_list.update()
+            self.player_sprite.update_animation()
+        if self.player_sprite.center_x < 31:
+            self.player_sprite.center_x = 32
+        if self.player_sprite.center_x > 1510:
+            self.player_sprite.center_x = 1509
         # Do some logic here to figure out what room we are in, and if we need to go
         # to a different room.
-        if self.player_sprite.center_x > SCREEN_WIDTH and self.current_room == 0:
-            self.current_room = 1
-            self.physics_engine = arcade.PhysicsEngineSimple(self.player_sprite,
-                                                             self.rooms[self.current_room].wall_list)
+        if self.player_sprite.center_x > SCREEN_WIDTH and self.current_screen == 2:
+            self.current_screen = 1
+            self.physics_engine = arcade.PhysicsEnginePlatformer(self.player_sprite,
+                                                             self.screens[self.current_screen].wall_list, GRAVITY)
             self.player_sprite.center_x = 0
-        elif self.player_sprite.center_x < 0 and self.current_room == 1:
-            self.current_room = 0
-            self.physics_engine = arcade.PhysicsEngineSimple(self.player_sprite,
-                                                             self.rooms[self.current_room].wall_list)
-            self.player_sprite.center_x = SCREEN_WIDTH
 
+
+
+
+        # Loop through each bullet
+        for bullet in self.bullet_list:
+
+            # Check this bullet to see if it hit a coin
+            hit_list = arcade.check_for_collision_with_list(bullet, self.screens[self.current_screen].wall_list)
+            enemy = arcade.SpriteList()
+            enemy.append(self.enemy_sprite)
+            enemy_hit = arcade.check_for_collision_with_list(bullet, enemy)
+            # If it did, get rid of the bullet
+            if len(hit_list) > 0:
+                bullet.kill()
+            if len(enemy_hit) > 0:
+                bullet.kill()
+                self.enemy_health -= 5
+                            # For every coin we hit, add to the score and remove the coin
+
+            # If the bullet flies off-screen, remove it.
+            if bullet.left > SCREEN_WIDTH:
+                bullet.kill()
+        for bullet in self.enemy_bullet_list:
+
+            # Check this bullet to see if it hit a coin
+            hit_list = arcade.check_for_collision_with_list(bullet, self.screens[self.current_screen].wall_list)
+            enemy = arcade.SpriteList()
+            enemy.append(self.player_sprite)
+            enemy_hit = arcade.check_for_collision_with_list(bullet, enemy)
+            # If it did, get rid of the bullet
+            if len(hit_list) > 0:
+                bullet.kill()
+            if len(enemy_hit) > 0:
+                bullet.kill()
+                self.player_health -= 5
+                            # For every coin we hit, add to the score and remove the coin
+
+            # If the bullet flies off-screen, remove it.
+            if bullet.left > SCREEN_WIDTH:
+                bullet.kill()
 
 def main():
     """ Main method """
     window = PlatformerGame(SCREEN_WIDTH, SCREEN_HEIGHT)
+    window.set_update_rate(1/60)
     window.setup()
     arcade.run()
 
